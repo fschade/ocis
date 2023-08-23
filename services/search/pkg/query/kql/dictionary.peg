@@ -30,7 +30,7 @@ Groups <-
     "(" v:Nodes ")" {
         return groupNode("", v, c.text, c.pos)
     } /
-    k:Char+ (ColonOperator / EqualOperator) "(" _ v:FreeTextKeywords+ _ ")" {
+    k:Char+ (ColonOperator / EqualOperator) "(" _ v:(BooleanOperators / FreeTextKeywords)+ _ ")" {
         return groupNode(k, v, c.text, c.pos)
     }
 

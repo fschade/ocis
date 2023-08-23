@@ -31,6 +31,7 @@ var FullDictionary = []string{
 	`author:"John Smith" OR author:"Jane Smith"`,
 	`author:"John Smith" AND filetype:docx`,
 	`author:("John Smith" "Jane Smith")`,
+	`author:("John Smith" OR "Jane Smith")`,
 	`(DepartmentId:* OR RelatedHubSites:*) AND contentclass:sts_site NOT IsHubSite:false`,
 	`author:"John Smith" (filetype:docx title:"Advanced Search")`,
 }
@@ -87,6 +88,14 @@ func TestParse(t *testing.T) {
 						},
 					},
 					&ast.GroupNode{
+						Key: "author",
+						Nodes: []ast.Node{
+							&ast.StringNode{Value: "John Smith"},
+							&ast.OperatorNode{Value: "OR"},
+							&ast.StringNode{Value: "Jane Smith"},
+						},
+					},
+					&ast.GroupNode{
 						Nodes: []ast.Node{
 							&ast.StringNode{Key: "DepartmentId", Value: "*"},
 							&ast.OperatorNode{Value: "OR"},
@@ -112,6 +121,8 @@ func TestParse(t *testing.T) {
 			name: "Group",
 			got: []string{
 				`(name:"moby di*" OR tag:bestseller) AND tag:book NOT tag:read`,
+				`author:("John Smith" Jane)`,
+				`author:("John Smith" OR Jane)`,
 			},
 			want: &ast.Ast{
 				Nodes: []ast.Node{
@@ -126,21 +137,18 @@ func TestParse(t *testing.T) {
 					&ast.StringNode{Key: "tag", Value: "book"},
 					&ast.OperatorNode{Value: "NOT"},
 					&ast.StringNode{Key: "tag", Value: "read"},
-				},
-			},
-			err: false,
-		},
-		{
-			name: "KeyGroup",
-			got: []string{
-				`author:("John Smith" Jane)`,
-			},
-			want: &ast.Ast{
-				Nodes: []ast.Node{
 					&ast.GroupNode{
 						Key: "author",
 						Nodes: []ast.Node{
 							&ast.StringNode{Value: "John Smith"},
+							&ast.StringNode{Value: "Jane"},
+						},
+					},
+					&ast.GroupNode{
+						Key: "author",
+						Nodes: []ast.Node{
+							&ast.StringNode{Value: "John Smith"},
+							&ast.OperatorNode{Value: "OR"},
 							&ast.StringNode{Value: "Jane"},
 						},
 					},
