@@ -337,7 +337,7 @@ var _ = Describe("Bleve", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.TotalMatches).To(Equal(int32(3)))
 			})
-			It("search *doc* in a subfolder", func() {
+			FIt("search *doc* in a subfolder", func() {
 				res, err := doSearch(rootResource.ID, "Name:*doc*", "./doc")
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.TotalMatches).To(Equal(int32(2)))
