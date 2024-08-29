@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/oklog/run"
+	"github.com/urfave/cli/v2"
+
 	"github.com/owncloud/ocis/v2/ocis-pkg/config/configlog"
 	"github.com/owncloud/ocis/v2/ocis-pkg/handlers"
 	"github.com/owncloud/ocis/v2/ocis-pkg/log"
@@ -14,7 +16,6 @@ import (
 	"github.com/owncloud/ocis/v2/services/antivirus/pkg/config"
 	"github.com/owncloud/ocis/v2/services/antivirus/pkg/config/parser"
 	"github.com/owncloud/ocis/v2/services/antivirus/pkg/service"
-	"github.com/urfave/cli/v2"
 )
 
 // Server is the entrypoint for the server command.
@@ -49,7 +50,9 @@ func Server(cfg *config.Config) *cli.Command {
 					return err
 				}
 
-				gr.Add(svc.Run, func(_ error) {
+				gr.Add(func() error {
+					return svc.Run(ctx)
+				}, func(_ error) {
 					cancel()
 				})
 			}

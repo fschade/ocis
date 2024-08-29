@@ -86,7 +86,7 @@ type Antivirus struct {
 }
 
 // Run runs the service
-func (av Antivirus) Run() error {
+func (av Antivirus) Run(ctx context.Context) error {
 	evtsCfg := av.c.Events
 
 	var rootCAPool *x509.CertPool
@@ -115,24 +115,26 @@ func (av Antivirus) Run() error {
 	if err != nil {
 		return err
 	}
-
-	for e := range ch {
-		err := av.processEvent(e, natsStream)
-		if err != nil {
-			switch {
-			case errors.Is(err, ErrFatal):
-				return err
-			case errors.Is(err, ErrEvent):
-				// Right now logging of these happens in the processEvent method, might be cleaner to do it here.
-				continue
-			default:
-				av.l.Fatal().Err(err).Msg("unknown error - exiting")
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case e := <-ch:
+			err := av.processEvent(e, natsStream)
+			if err != nil {
+				switch {
+				case e.Event:
+				case errors.Is(err, ErrFatal):
+					return err
+				case errors.Is(err, ErrEvent):
+					// Right now logging of these happens in the processEvent method, might be cleaner to do it here.
+					continue
+				default:
+					av.l.Fatal().Err(err).Msg("unknown error - exiting")
+				}
 			}
 		}
-
 	}
-
-	return nil
 }
 
 func (av Antivirus) processEvent(e events.Event, s events.Publisher) error {
