@@ -2,6 +2,7 @@ package icapclient
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -73,7 +74,7 @@ const (
 type Conn interface {
 	io.Closer
 	Connect(ctx context.Context, address string) error
-	Send(in []byte) ([]byte, error)
+	Send(in io.Reader) (*bytes.Reader, error)
 }
 
 // Response represents the icap server response data
@@ -244,7 +245,7 @@ func addHeaderAndBody(headerStr, bodyStr string) string {
 }
 
 // toICAPRequest returns the given request in its ICAP/1.x wire
-func toICAPRequest(req Request) ([]byte, error) {
+func toICAPRequest(req Request) (*bytes.Reader, error) {
 	// Making the ICAP message block
 	reqStr := fmt.Sprintf("%s %s %s%s", req.Method, req.URL.String(), icapVersion, crlf)
 
@@ -262,7 +263,6 @@ func toICAPRequest(req Request) ([]byte, error) {
 	httpReqStr := ""
 	if req.HTTPRequest != nil {
 		b, err := httputil.DumpRequestOut(req.HTTPRequest, true)
-
 		if err != nil {
 			return nil, err
 		}
@@ -292,14 +292,12 @@ func toICAPRequest(req Request) ([]byte, error) {
 				httpReqStr += crlf
 			}
 		}
-
 	}
 
 	// build the HTTP Response message block
 	httpRespStr := ""
 	if req.HTTPResponse != nil {
 		b, err := httputil.DumpResponse(req.HTTPResponse, true)
-
 		if err != nil {
 			return nil, err
 		}
@@ -321,7 +319,6 @@ func toICAPRequest(req Request) ([]byte, error) {
 		if httpRespStr != "" && !strings.HasSuffix(httpRespStr, doubleCRLF) { // if the HTTP Response message block doesn't end with a \r\n\r\n, then going to add one by force for better calculation of byte offsets
 			httpRespStr += crlf
 		}
-
 	}
 
 	if encVal := req.Header.Get(encapsulatedHeader); encVal != "" {
@@ -340,13 +337,12 @@ func toICAPRequest(req Request) ([]byte, error) {
 		httpReqStr = addFullBodyInPreviewIndicator(httpReqStr)
 	}
 
-	data := []byte(reqStr + httpReqStr + httpRespStr)
-
-	return data, nil
+	return bytes.NewReader([]byte(reqStr + httpReqStr + httpRespStr)), nil
 }
 
 // toClientResponse reads an ICAP message and returns a Response
-func toClientResponse(b *bufio.Reader) (Response, error) {
+func toClientResponse(in io.Reader) (Response, error) {
+	b := bufio.NewReader(in)
 	resp := Response{
 		Header: make(map[string][]string),
 	}

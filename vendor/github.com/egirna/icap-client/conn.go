@@ -58,7 +58,7 @@ func (c *ICAPConn) Connect(ctx context.Context, address string) error {
 }
 
 // Send sends a request to the icap server
-func (c *ICAPConn) Send(in []byte) ([]byte, error) {
+func (c *ICAPConn) Send(in io.Reader) (*bytes.Reader, error) {
 	if !c.ok() {
 		return nil, syscall.EINVAL
 	}
@@ -71,7 +71,7 @@ func (c *ICAPConn) Send(in []byte) ([]byte, error) {
 
 	go func() {
 		// send the message to the server
-		_, err := c.tcp.Write(in)
+		_, err := io.Copy(c.tcp, in)
 		if err != nil {
 			errChan <- err
 		}
@@ -124,7 +124,7 @@ func (c *ICAPConn) Send(in []byte) ([]byte, error) {
 	case err := <-errChan:
 		return nil, err
 	case res := <-resChan:
-		return res, nil
+		return bytes.NewReader(res), nil
 	}
 }
 

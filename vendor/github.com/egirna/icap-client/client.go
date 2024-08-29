@@ -1,11 +1,9 @@
 package icapclient
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"net/http"
-	"strings"
 )
 
 // Client represents the icap client who makes the icap server calls
@@ -44,18 +42,18 @@ func (c *Client) Do(req Request) (res Response, err error) {
 	req.setDefaultRequestHeaders()
 
 	// convert the request to icap message
-	message, err := toICAPRequest(req)
+	icapRequest, err := toICAPRequest(req)
 	if err != nil {
 		return Response{}, err
 	}
 
 	// send the icap message to the server
-	dataRes, err := c.conn.Send(message)
+	srvResponse, err := c.conn.Send(icapRequest)
 	if err != nil {
 		return Response{}, err
 	}
 
-	res, err = toClientResponse(bufio.NewReader(strings.NewReader(string(dataRes))))
+	res, err = toClientResponse(srvResponse)
 	if err != nil {
 		return Response{}, err
 	}
@@ -78,10 +76,10 @@ func (c *Client) Do(req Request) (res Response, err error) {
 	}
 
 	// send the remaining body bytes to the server
-	dataRes, err = c.conn.Send(data)
+	srvResponse, err = c.conn.Send(bytes.NewReader(data))
 	if err != nil {
 		return Response{}, err
 	}
 
-	return toClientResponse(bufio.NewReader(strings.NewReader(string(dataRes))))
+	return toClientResponse(srvResponse)
 }
